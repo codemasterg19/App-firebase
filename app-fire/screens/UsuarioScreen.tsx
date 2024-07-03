@@ -2,8 +2,9 @@ import { Alert, Button, FlatList, ImageBackground, StatusBar, StyleSheet, Text, 
 import React, { useEffect, useState } from 'react'
 //FIREBASE
 import { db } from '../config/Config'
-import { onValue, ref, set } from "firebase/database";
+import { onValue, ref, remove, set, update } from "firebase/database";
 import { Card, Paragraph, Title } from 'react-native-paper';
+import Tarjeta from './Tarjeta';
 
 export default function UsuarioScreen() {
   const [cedula, setcedula] = useState("")
@@ -12,7 +13,7 @@ export default function UsuarioScreen() {
   const [comentario, setcomentario] = useState("")
 
   const [lista, setlista] = useState([])
-
+  const [visible, setvisible] = useState(false)
   ////////////// GUARDAR ///////////
 
 function guardarUsuario(cedula: string, nombre:string, correo:string, comentario:string) {
@@ -58,10 +59,57 @@ useEffect(() => {
   leer()
 }, [])
 
+////////////////////////////EDITAR//
+
+function editar(id: string){
+  update(ref(db, 'usuasrios/' + id), {
+    name: nombre,
+    email: correo,
+    coment : comentario
+  });
+
+setcedula('')
+setnombre('')
+setcorreo('')
+setcomentario('')
+setvisible(false);
+leer();
+
+}
+
+////////////////////////////EDITAR 2 CARGA DATOS//
+
+function editar2(item: any){
+setcedula(item.key)
+setnombre(item.name)
+setcorreo(item.email)
+setcomentario(item.coment)
+
+setvisible(true);
+
+
+}
+
+////////ELIMINAR///
+
+function eliminar(id: string){
+  remove(ref(db, 'usuasrios/' + id))
+  .then(() => {
+    Alert.alert('Mensaje', 'Usuario Eliminado');
+    leer(); // Volver a leer los datos para actualizar la lista
+  })
+  .catch((error) => {
+    console.log(error);
+  });
+  
+}
+
+
 type Usuario ={
   name: string,
   email: string,
-  coment: string
+  coment: string,
+  key: string
 
 }
 
@@ -96,19 +144,30 @@ type Usuario ={
         value={comentario}
       />
       <View style={styles.buttonContainer}>
-      <Button title='GUARDAR' onPress={()=> guardarUsuario(cedula,nombre,correo,comentario)}
-        />
-        </View>
+        {!visible && (
+          <Button title='GUARDAR' onPress={() => guardarUsuario(cedula, nombre, correo, comentario)} />
+        )}
+        {visible && (
+          <Button title='EDITAR' onPress={() => editar(cedula)} />
+        )}
+      </View>
       <FlatList
         data={lista}
         renderItem={({item}:{item:Usuario})=>
-            <Card style={styles.card}>
-        <Card.Content>
-          <Title>{item.name}</Title>
-          <Paragraph>{item.email}</Paragraph>
-          <Paragraph>{item.coment}</Paragraph>
-        </Card.Content>
-      </Card>
+         //   <Card style={styles.card}>
+        //<Card.Content>
+         // <Title>{item.name}</Title>
+         // <Paragraph>{item.email}</Paragraph>
+         // <Paragraph>{item.coment}</Paragraph>
+       // </Card.Content>
+     // </Card>
+     <View style={styles.card}>
+      <Tarjeta  data={item}/>
+      
+      <Button title='Editar' color={'#3fbcd5'} onPress={ ()=> editar2(item)} />
+      <Button title='Eliminar' color={'#cd1504'} onPress={ ()=> eliminar(item.key)} />
+      
+     </View>
         }
       />
       <StatusBar
@@ -168,15 +227,25 @@ const styles = StyleSheet.create({
         color: '#055f8f',
       },
       card: {
+        
         backgroundColor: '#8be9e1',
         marginVertical: 10,
         width: '100%',
-        borderRadius: 10,
+        justifyContent: 'center',
+        
         shadowColor: '#19398f',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.8,
         shadowRadius: 2,
         elevation: 2,
+
+      },
+
+      btn:{
+        flexDirection: 'row',
+        justifyContent: 'center', 
+        
+        
       }
     })
     
